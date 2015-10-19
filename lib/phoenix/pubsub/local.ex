@@ -16,8 +16,8 @@ defmodule Phoenix.PubSub.Local do
     * `server_name` - The name to register the server under
 
   """
-  def start_link(server_name) do
-    GenServer.start_link(__MODULE__, server_name, name: server_name)
+  def start_link(table_name, server_name) do
+    GenServer.start_link(__MODULE__, table_name, name: server_name)
   end
 
   @doc """
@@ -35,8 +35,9 @@ defmodule Phoenix.PubSub.Local do
       :ok
 
   """
-  def subscribe(local_server, pid, topic, opts \\ []) when is_atom(local_server) do
-    {:ok, table} = GenServer.call(local_server, {:subscribe, pid, topic, opts[:link]})
+  def subscribe(server_name, pid, topic, opts \\ []) when is_atom(server_name) do
+    name = :ets.lookup_element(server_name, :erlang.system_info(:scheduler_id), 2)
+    {:ok, table} = GenServer.call(name, {:subscribe, pid, topic, opts[:link]})
     true = :ets.insert(table, {topic, {pid, opts[:fastlane]}})
     :ok
   end
@@ -159,8 +160,6 @@ defmodule Phoenix.PubSub.Local do
   end
 
   def init(name) do
-    ^name = :ets.new(name, [:bag, :named_table, :public,
-                            read_concurrency: true, write_concurrency: true])
     Process.flag(:trap_exit, true)
     {:ok, name}
   end
