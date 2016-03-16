@@ -55,7 +55,7 @@ defmodule Phoenix.Transports.WebSocket do
 
   @doc false
   def init(%Plug.Conn{method: "GET"} = conn, {endpoint, handler, transport}) do
-    {_, opts} = handler.__transport__(transport)
+    {transport_module, opts} = handler.__transport__(transport)
 
     conn =
       conn
@@ -70,9 +70,9 @@ defmodule Phoenix.Transports.WebSocket do
         params     = conn.params
         serializer = Keyword.fetch!(opts, :serializer)
 
-        case Transport.connect(endpoint, handler, transport, __MODULE__, serializer, params) do
+        case Transport.connect(endpoint, handler, transport, transport_module, serializer, params) do
           {:ok, socket} ->
-            {:ok, conn, {__MODULE__, {socket, opts}}}
+            {:ok, conn, {transport_module, {socket, opts}}}
           :error ->
             send_resp(conn, 403, "")
             {:error, conn}
